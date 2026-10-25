@@ -4,7 +4,26 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app import create_app
+from app import PostgresConnection, create_app
+
+
+class RecordingConnection:
+    def execute(self, query, params):
+        self.query = query
+        self.params = params
+        return "cursor"
+
+
+class DatabaseConnectionTests(unittest.TestCase):
+    def test_postgres_connection_translates_sqlite_placeholders(self):
+        connection = RecordingConnection()
+        postgres = PostgresConnection(connection)
+
+        result = postgres.execute("SELECT id FROM movies WHERE id = ?", (7,))
+
+        self.assertEqual(result, "cursor")
+        self.assertEqual(connection.query, "SELECT id FROM movies WHERE id = %s")
+        self.assertEqual(connection.params, (7,))
 
 
 class MovieSiteTests(unittest.TestCase):
@@ -46,6 +65,15 @@ class MovieSiteTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Manage your movies", response.data)
+
+    def test_home_links_to_registration_and_both_login_pages(self):
+        home = self.client.get("/")
+        self.assertIn(b'href="/register">Register</a>', home.data)
+        self.assertIn(b'href="/viewer/login">Sign in</a>', home.data)
+        self.assertIn(b'href="/login">Admin login</a>', home.data)
+        self.assertEqual(self.client.get("/register").status_code, 200)
+        self.assertEqual(self.client.get("/viewer/login").status_code, 200)
+        self.assertEqual(self.client.get("/login").status_code, 302)
 
     def upload_movie(self):
         token = self.csrf_token("/admin")

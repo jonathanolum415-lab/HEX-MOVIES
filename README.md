@@ -1,6 +1,6 @@
 # Hex Movies
 
-A responsive movie library with local uploads, an SQLite catalog, admin login, genre filters, cinematic artwork, and an in-browser video player with downloads.
+A responsive movie library with local uploads, an SQLite or Supabase Postgres catalog, admin login, genre filters, cinematic artwork, and an in-browser video player with downloads.
 
 ## Run locally
 
@@ -11,7 +11,9 @@ A responsive movie library with local uploads, an SQLite catalog, admin login, g
 5. On first visit, create the admin account. Use a unique password of at least 12 characters.
 6. Sign in and open **Manage library** to upload movies.
 
-Movie metadata is stored in `movies.db`; uploaded movie and poster files are stored in `uploads/`. Movie uploads accept any file extension and have no app-configured size limit. Actual upload capacity is still limited by available disk space and any web server, reverse proxy, hosting provider, or browser constraints.
+By default, movie metadata is stored in `movies.db`; uploaded movie and poster files are stored in `uploads/`. The Supabase project already has the schema and the 8 existing movie records. To connect this local app, copy `.env.example` to `.env`, set `SUPABASE_DB_URL` to the database connection URI from the Supabase project dashboard (**Connect**), install the dependencies, and restart the app. The app then uses Supabase for the movie catalog, admin accounts, and viewer accounts instead of SQLite. Create a new admin account at `/setup`; local admin/viewer accounts are not copied. Keep `.env` private and never commit it.
+
+Existing movie metadata can be copied into Supabase, but media files remain in the local `uploads/` directory. Supabase Postgres stores catalog records, not large video binaries; use a separately configured object-storage service if media needs to be available outside this computer. Movie uploads accept any file extension and have no app-configured size limit. Actual upload capacity is still limited by available disk space and any web server, reverse proxy, hosting provider, or browser constraints.
 
 ## Features
 
@@ -20,7 +22,7 @@ Movie metadata is stored in `movies.db`; uploaded movie and poster files are sto
 - Admin sign-in, sign-out, movie upload, metadata editing, replacement files, and deletion.
 - Public movie catalog with live search by title, genre, or year and genre filters.
 - HTML5 player with browser-native playback controls for recognized video MIME types and a download link for all uploaded formats. Playback depends on the browser and installed codecs; use the download link if a file cannot play in the browser.
-- SQLite-backed catalog, local media storage, CSRF protection, poster file-type allowlists, and path-safe media serving.
+- SQLite or Supabase Postgres catalog, local media storage, CSRF protection, poster file-type allowlists, and path-safe media serving.
 - Responsive catalog, admin, and player pages under Hex Movies branding.
 
 Only upload media that you own or are authorized to store and share. This development server is intended for personal use on your computer. It is not configured for public production hosting; do not expose it to the internet without adding production hosting, HTTPS, stronger operational controls, and a review of your authorization model.

@@ -8,6 +8,9 @@ from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
 
+import psycopg
+from dotenv import load_dotenv
+from psycopg.rows import dict_row
 from flask import (
     Flask,
     abort,
@@ -24,9 +27,26 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{3,40}$")
+DATABASE_ERRORS = (sqlite3.Error, psycopg.Error)
+DATABASE_INTEGRITY_ERRORS = (sqlite3.IntegrityError, psycopg.errors.UniqueViolation)
+
+
+class PostgresConnection:
+    def __init__(self, connection):
+        self.connection = connection
+
+    def execute(self, query, params=()):
+        return self.connection.execute(query.replace("?", "%s"), params)
+
+    def commit(self):
+        self.connection.commit()
+
+    def close(self):
+        self.connection.close()
 
 
 def create_app(test_config=None):
@@ -36,6 +56,7 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("MOVIE_SECRET_KEY") or _load_secret_key(app.instance_path),
         DATABASE=os.environ.get("MOVIE_DATABASE") or str(BASE_DIR / "movies.db"),
+        SUPABASE_DB_URL=os.environ.get("SUPABASE_DB_URL"),
         UPLOAD_FOLDER=os.environ.get("MOVIE_UPLOAD_FOLDER") or str(BASE_DIR / "uploads"),
     )
     if test_config:
@@ -99,11 +120,12 @@ def create_app(test_config=None):
             else:
                 with get_db() as conn:
                     cursor = conn.execute(
-                        "INSERT INTO admins (username, password_hash) VALUES (?, ?)",
+                        "INSERT INTO admins (username, password_hash) VALUES (?, ?) RETURNING id",
                         (username, generate_password_hash(password)),
                     )
+                    admin_id = cursor.fetchone()["id"]
                     conn.commit()
-                session["admin_id"] = cursor.lastrowid
+                session["admin_id"] = admin_id
                 flash("Admin account created. You can now manage your library.", "success")
                 return redirect(url_for("admin"))
         return render_template("auth.html", mode="setup")
@@ -136,15 +158,17 @@ def create_app(test_config=None):
                             """
                             INSERT INTO users (username, email, password_hash)
                             VALUES (?, ?, ?)
+                            RETURNING id
                             """,
                             (username, email, generate_password_hash(password)),
                         )
+                        viewer_id = cursor.fetchone()["id"]
                         conn.commit()
-                except sqlite3.IntegrityError:
+                except DATABASE_INTEGRITY_ERRORS:
                     flash("That username or email address is already registered.", "error")
                 else:
                     session.clear()
-                    session["viewer_id"] = cursor.lastrowid
+                    session["viewer_id"] = viewer_id
                     session["viewer_username"] = username
                     session["csrf_token"] = secrets.token_urlsafe(32)
                     flash("Your Hex Movies account is ready.", "success")
@@ -240,7 +264,7 @@ def create_app(test_config=None):
                     (*details, poster_name, video_name),
                 )
                 conn.commit()
-        except sqlite3.Error:
+        except DATABASE_ERRORS:
             remove_upload(video_name)
             if poster_name:
                 remove_upload(poster_name)
@@ -283,7 +307,7 @@ def create_app(test_config=None):
                     (*details, new_poster, new_video, movie_id),
                 )
                 conn.commit()
-        except sqlite3.Error:
+        except DATABASE_ERRORS:
             if new_video != existing["video_path"]:
                 remove_upload(new_video)
             if new_poster != existing["poster"] and new_poster:
@@ -393,9 +417,13 @@ def _load_secret_key(instance_path):
 
 @contextmanager
 def get_db():
-    conn = sqlite3.connect(current_app.config["DATABASE"])
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
+    database_url = current_app.config.get("SUPABASE_DB_URL")
+    if database_url:
+        conn = PostgresConnection(psycopg.connect(database_url, row_factory=dict_row))
+    else:
+        conn = sqlite3.connect(current_app.config["DATABASE"])
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
     try:
         yield conn
     finally:
@@ -403,6 +431,13 @@ def get_db():
 
 
 def init_db():
+    if current_app.config.get("SUPABASE_DB_URL"):
+        with get_db() as conn:
+            conn.execute("SELECT id FROM movies LIMIT 0")
+            conn.execute("SELECT id FROM admins LIMIT 0")
+            conn.execute("SELECT id FROM users LIMIT 0")
+        return
+
     with get_db() as conn:
         conn.execute(
             """

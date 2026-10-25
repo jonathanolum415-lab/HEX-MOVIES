@@ -3,3 +3,6 @@ __pycache__/
 instance/
 uploads/
 movies.db
+.env
+.env.*
+!.env.example
