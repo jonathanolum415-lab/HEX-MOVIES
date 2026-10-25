@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10120f" />
+    <title>{{ movie.title }} — Hex Movies</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}" />
+  </head>
+  <body class="watch-page">
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('home') }}"><span class="brand-mark">H</span><span class="brand-name">hex movies</span><span class="brand-period">.</span></a>
+      <a class="nav-link" href="{{ url_for('home') }}#movie-grid">← Back to movies</a>
+    </header>
+    <main class="watch-main">
+      <a class="back-link" href="{{ url_for('home') }}#movie-grid">← All movies</a>
+      <section class="player-card">
+        <div class="video-frame">
+          {% if can_stream %}
+            <video controls playsinline preload="metadata"{% if movie.poster %} poster="{{ url_for('serve_upload', filename=movie.poster) }}"{% endif %}>
+              <source src="{{ url_for('stream_movie', movie_id=movie.id) }}" type="{{ video_mime }}" />
+              Sorry, your browser can't play this video. Try downloading it instead.
+            </video>
+          {% else %}
+            <p class="unsupported-video">This file can be downloaded, but its format isn’t recognized for browser playback.</p>
+          {% endif %}
+        </div>
+        <div class="player-info">
+          <div>
+            <p class="eyebrow section-eyebrow">{{ movie.genre or 'HEX MOVIES PICK' }}{% if movie.year %} · {{ movie.year }}{% endif %}</p>
+            <h1>{{ movie.title }}</h1>
+            {% if movie.description %}<p class="player-description">{{ movie.description }}</p>{% endif %}
+            {% if can_stream %}<p class="player-description playback-note">Playback depends on your browser’s supported codecs. If it won’t play, download the file and open it in a compatible media player.</p>{% endif %}
+          </div>
+          <a class="button button-primary download-button" href="{{ url_for('download_movie', movie_id=movie.id) }}">↓ Download movie</a>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer"><a class="brand footer-brand" href="{{ url_for('home') }}"><span class="brand-mark">H</span><span class="brand-name">hex movies</span><span class="brand-period">.</span></a><span>Your front-row seat to a good story.</span><a class="back-to-top" href="{{ url_for('home') }}">Browse the collection →</a></footer>
+  </body>
+</html>

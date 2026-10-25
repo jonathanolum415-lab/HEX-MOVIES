@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A thoughtfully curated little corner of the internet for movie lovers."
+    />
+    <meta name="theme-color" content="#10120f" />
+    <title>Hex Movies — Find your next favorite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Hex Movies home">
+        <span class="brand-mark" aria-hidden="true">H</span>
+        <span class="brand-name">hex movies</span><span class="brand-period">.</span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link is-active" href="#discover">Discover</a>
+        <a class="nav-link" href="#movie-grid">Movies</a>
+        <a class="nav-link" id="nav-watchlist" href="#movie-grid">My watchlist</a>
+      </nav>
+      <a class="header-note" href="#movie-grid">
+        <span class="status-dot" aria-hidden="true"></span>
+        Your next favorite is waiting
+      </a>
+    </header>
+
+    <main>
+      <section class="hero" id="discover" aria-labelledby="hero-title">
+        <img
+          class="hero-image"
+          src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=2200&q=85"
+          alt=""
+          fetchpriority="high"
+        />
+        <div class="hero-content">
+          <p class="eyebrow"><span class="eyebrow-line"></span> YOUR FRONT-ROW SEAT STARTS HERE</p>
+          <h1 id="hero-title">Big screen<br />energy.</h1>
+          <p class="hero-description">
+            Your own little corner of cinema. Find a story worth staying in for,
+            settle in, and enjoy the show.
+          </p>
+          <div class="hero-actions">
+            <button class="button button-primary" id="featured-details" type="button">
+              <span aria-hidden="true">▶</span> Meet the pick
+            </button>
+            <button class="button button-quiet" id="featured-save" type="button">
+              <span aria-hidden="true">＋</span> Add to watchlist
+            </button>
+          </div>
+          <div class="hero-caption">
+            <span class="caption-rule"></span>
+            <span>ALL THE STORIES. ONE PLACE.</span>
+          </div>
+        </div>
+        <div class="hero-pagination" aria-hidden="true">
+          <span class="pagination-current">01</span>
+          <span class="pagination-track"><span></span></span>
+          <span>04</span>
+        </div>
+      </section>
+
+      <section class="catalog-section" id="movie-grid" aria-labelledby="catalog-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">CURATED FOR YOUR NEXT MOVIE NIGHT</p>
+            <h2 id="catalog-title">Find your next favorite<span>.</span></h2>
+          </div>
+          <label class="search-box">
+            <span class="sr-only">Search movies</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10.8" cy="10.8" r="6.8"></circle>
+              <path d="m16 16 4.3 4.3"></path>
+            </svg>
+            <input id="movie-search" type="search" placeholder="Search a title..." autocomplete="off" />
+            <kbd>/</kbd>
+          </label>
+        </div>
+
+        <div class="catalog-toolbar">
+          <div class="genre-list" role="group" aria-label="Filter movies by genre">
+            <button class="genre-chip is-selected" type="button" data-genre="All" aria-pressed="true">All films</button>
+            <button class="genre-chip" type="button" data-genre="Drama" aria-pressed="false">Drama</button>
+            <button class="genre-chip" type="button" data-genre="Adventure" aria-pressed="false">Adventure</button>
+            <button class="genre-chip" type="button" data-genre="Sci-Fi" aria-pressed="false">Sci-fi</button>
+            <button class="genre-chip" type="button" data-genre="Comedy" aria-pressed="false">Comedy</button>
+            <button class="genre-chip" type="button" data-genre="Animation" aria-pressed="false">Animation</button>
+          </div>
+          <button class="watchlist-filter" id="watchlist-filter" type="button" aria-pressed="false">
+            <span aria-hidden="true">♡</span> Watchlist <span class="watchlist-count" id="watchlist-count">0</span>
+          </button>
+        </div>
+
+        <div class="results-heading">
+          <h3 id="results-title">Handpicked for you</h3>
+          <span id="results-count" aria-live="polite"></span>
+        </div>
+        <div class="movie-grid" id="movie-list" aria-live="polite"></div>
+        <div class="empty-state" id="empty-state" hidden>
+          <span aria-hidden="true">✳</span>
+          <h3>No films found just yet.</h3>
+          <p>Try another title or genre and we'll find something for you.</p>
+          <button class="text-button" id="reset-filters" type="button">Show me everything →</button>
+        </div>
+      </section>
+
+      <section class="note-section" id="watchlist" aria-label="A note about Hex Movies">
+        <span class="note-star" aria-hidden="true">✳</span>
+        <p>Lights down. <em>Worlds away.</em></p>
+        <span class="note-copy">Your next movie-night escape is right here.</span>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="brand footer-brand" href="#">
+        <span class="brand-mark" aria-hidden="true">H</span>
+        <span class="brand-name">hex movies</span><span class="brand-period">.</span>
+      </a>
+      <span>Your front-row seat to a good story.</span>
+      <a class="back-to-top" href="#top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' }); return false;">Back to the top ↑</a>
+    </footer>
+
+    <dialog class="movie-dialog" id="movie-dialog" aria-labelledby="dialog-title">
+      <button class="dialog-close" id="dialog-close" type="button" aria-label="Close movie details">×</button>
+      <img class="dialog-image" id="dialog-image" src="" alt="" />
+      <div class="dialog-content">
+        <p class="eyebrow" id="dialog-kicker"></p>
+        <h2 id="dialog-title"></h2>
+        <p class="dialog-meta" id="dialog-meta"></p>
+        <p class="dialog-description" id="dialog-description"></p>
+        <button class="button button-primary" id="dialog-save" type="button"></button>
+      </div>
+    </dialog>
+  </body>
+</html>

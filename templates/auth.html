@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      {% if mode == 'register' %}Create your account{% elif mode == 'viewer_login' %}Viewer sign in{% elif mode == 'setup' %}Create admin account{% else %}Admin login{% endif %} — Hex Movies
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}" />
+  </head>
+  <body class="auth-page">
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('home') }}"><span class="brand-mark">H</span><span class="brand-name">hex movies</span><span class="brand-period">.</span></a>
+      <a class="nav-link" href="{{ url_for('home') }}">← Back to movies</a>
+    </header>
+    <main class="auth-main">
+      <section class="auth-card">
+        <p class="eyebrow section-eyebrow">{{ 'JOIN HEX MOVIES' if mode in ('register', 'viewer_login') else 'PRIVATE LIBRARY' }}</p>
+        <h1>
+          {% if mode == 'setup' %}Set up your admin account
+          {% elif mode == 'register' %}Create your account.
+          {% elif mode == 'viewer_login' %}Welcome back.
+          {% else %}Admin sign in.{% endif %}
+        </h1>
+        <p class="auth-intro">
+          {% if mode == 'setup' %}Create the admin account that manages movie uploads.
+          {% elif mode == 'register' %}Sign up to join the movie nights. Your viewer account does not have access to movie-management tools.
+          {% elif mode == 'viewer_login' %}Sign in to your viewer account and find something good to watch.
+          {% else %}Sign in to manage movie uploads and your collection.{% endif %}
+        </p>
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+          <p class="flash flash-{{ category }}">{{ message }}</p>
+        {% endfor %}
+        <form method="post" class="form-card">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+          {% if mode in ('register', 'setup') %}
+            <label class="field"><span>Username</span><input name="username" type="text" minlength="{{ 3 if mode == 'register' else 3 }}" maxlength="{{ 40 if mode == 'register' else 80 }}" autocomplete="username" required /></label>
+          {% endif %}
+          {% if mode in ('register', 'viewer_login') %}
+            <label class="field"><span>Email address</span><input name="email" type="email" maxlength="254" autocomplete="email" required /></label>
+          {% endif %}
+          {% if mode == 'login' %}
+            <label class="field"><span>Admin username</span><input name="username" type="text" minlength="3" maxlength="80" autocomplete="username" required /></label>
+          {% endif %}
+          <label class="field"><span>Password{% if mode == 'setup' %} (12 characters minimum){% elif mode == 'register' %} (4 characters minimum){% endif %}</span><input name="password" type="password" minlength="{{ 12 if mode == 'setup' else 4 if mode == 'register' else 1 }}" autocomplete="{{ 'new-password' if mode in ('setup', 'register') else 'current-password' }}" required /></label>
+          {% if mode == 'register' %}
+            <label class="field"><span>Confirm password</span><input name="confirm_password" type="password" minlength="4" autocomplete="new-password" required /></label>
+          {% endif %}
+          <button class="button button-primary form-submit" type="submit">
+            {% if mode == 'setup' %}Create admin account{% elif mode == 'register' %}Create viewer account{% else %}Sign in{% endif %}
+          </button>
+        </form>
+        {% if mode == 'register' %}
+          <p class="auth-footnote">Already registered? <a href="{{ url_for('viewer_login') }}">Sign in</a>.</p>
+        {% elif mode == 'viewer_login' %}
+          <p class="auth-footnote">New to Hex Movies? <a href="{{ url_for('register') }}">Create a viewer account</a>.</p>
+        {% elif mode == 'setup' %}
+          <p class="auth-footnote">Admin passwords are stored as one-way hashes.</p>
+        {% elif mode == 'login' %}
+          <p class="auth-footnote">Viewer account? <a href="{{ url_for('viewer_login') }}">Sign in here</a>.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

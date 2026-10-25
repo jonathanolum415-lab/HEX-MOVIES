@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head id="top">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Discover, watch, and download movies with Hex Movies." />
+    <meta name="theme-color" content="#10120f" />
+    <title>Hex Movies — Find your next favorite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}" />
+    <script src="{{ url_for('static', filename='site.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('home') }}" aria-label="Hex Movies home">
+        <span class="brand-mark">H</span><span class="brand-name">hex movies</span><span class="brand-period">.</span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link is-active" href="#discover">Discover</a>
+        <a class="nav-link" href="#movie-grid">Movies</a>
+        {% if session.get('admin_id') %}
+          <a class="nav-link" href="{{ url_for('admin') }}">Manage library</a>
+          <form method="post" action="{{ url_for('admin_logout') }}" class="header-account-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <button class="nav-link nav-button" type="submit">Admin sign out</button>
+          </form>
+        {% elif viewer_username %}
+          <span class="nav-welcome">Hi, {{ viewer_username }}</span>
+          <form method="post" action="{{ url_for('viewer_logout') }}" class="header-account-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <button class="nav-link nav-button" type="submit">Sign out</button>
+          </form>
+        {% else %}
+          <a class="nav-link" href="{{ url_for('login') }}">Admin login</a>
+          <a class="nav-link" href="{{ url_for('viewer_login') }}">Sign in</a>
+          <a class="nav-link nav-register" href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+      </nav>
+      <a class="header-note" href="#movie-grid"><span class="status-dot"></span>Your movie night starts here</a>
+    </header>
+
+    <main>
+      <section class="hero" id="discover">
+        <img class="hero-image" src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=2200&q=85" alt="" fetchpriority="high" />
+        <div class="hero-content">
+          <p class="eyebrow"><span class="eyebrow-line"></span> YOUR FRONT-ROW SEAT STARTS HERE</p>
+          <h1>Big screen<br />energy.</h1>
+          <p class="hero-description">Your own little corner of cinema. Find a story worth staying in for, settle in, and enjoy the show.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#movie-grid"><span aria-hidden="true">▶</span> Explore the collection</a>
+            {% if session.get('admin_id') %}
+              <a class="button button-quiet" href="{{ url_for('admin') }}">＋ Add a movie</a>
+            {% endif %}
+          </div>
+          <div class="hero-caption"><span class="caption-rule"></span>ALL THE STORIES. ONE PLACE.</div>
+        </div>
+      </section>
+
+      <section class="catalog-section" id="movie-grid">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">CURATED FOR YOUR NEXT MOVIE NIGHT</p>
+            <h2>Find your next favorite<span>.</span></h2>
+          </div>
+          <label class="search-box">
+            <span class="sr-only">Search movies</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.3 4.3"></path></svg>
+            <input id="movie-search" type="search" placeholder="Search a title..." autocomplete="off" />
+            <kbd>/</kbd>
+          </label>
+        </div>
+
+        <div class="catalog-toolbar">
+          <div class="genre-list" role="group" aria-label="Filter movies by genre">
+            <button class="genre-chip is-selected" type="button" data-genre="all" aria-pressed="true">All films</button>
+            {% for genre in genres %}
+              <button class="genre-chip" type="button" data-genre="{{ genre|lower }}" aria-pressed="false">{{ genre }}</button>
+            {% endfor %}
+          </div>
+          <span class="collection-count">{{ movies|length }} {{ 'film' if movies|length == 1 else 'films' }}</span>
+        </div>
+
+        <div class="results-heading">
+          <h3>In the collection</h3>
+          <span id="results-count" aria-live="polite">{{ movies|length }} {{ 'film' if movies|length == 1 else 'films' }}</span>
+        </div>
+        {% if movies %}
+          <div class="movie-grid" id="movie-list" aria-live="polite">
+            {% for movie in movies %}
+              <article class="movie-card" data-title="{{ movie.title|lower }}" data-genre="{{ (movie.genre or '')|lower }}" data-year="{{ movie.year or '' }}">
+                <div class="poster-wrap">
+                  {% if movie.poster %}
+                    <img class="poster-image" src="{{ url_for('serve_upload', filename=movie.poster) }}" alt="{{ movie.title }} poster" loading="lazy" />
+                  {% else %}
+                    {% set genre_key = (movie.genre or '').split(',')[0].strip().lower() %}
+                    {% if genre_key in poster_art %}
+                      <img class="poster-image" src="https://images.unsplash.com/{{ poster_art[genre_key] }}?auto=format&fit=crop&w=700&q=80" alt="{{ movie.genre }}-inspired artwork for {{ movie.title }}" loading="lazy" />
+                    {% else %}
+                      <div class="poster-placeholder" aria-label="No poster uploaded"><span>HM</span></div>
+                    {% endif %}
+                  {% endif %}
+                  <span class="poster-genre">{{ movie.genre or 'FEATURED' }}</span>
+                </div>
+                <div class="movie-info">
+                  <div class="movie-title-group">
+                    <h4 class="movie-title">{{ movie.title }}</h4>
+                    <p class="movie-subtitle">{{ movie.year or 'Release year unknown' }}</p>
+                  </div>
+                  {% if movie.year %}<span class="movie-year">{{ movie.year }}</span>{% endif %}
+                </div>
+                {% if movie.description %}<p class="movie-description">{{ movie.description }}</p>{% endif %}
+                <div class="movie-actions">
+                  <a class="button button-primary" href="{{ url_for('watch_movie', movie_id=movie.id) }}">▶ Watch online</a>
+                  <a class="button button-quiet" href="{{ url_for('download_movie', movie_id=movie.id) }}">↓ Download</a>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <span aria-hidden="true">✳</span>
+            <h3>Your collection is ready for its first story.</h3>
+            <p>Sign in to your admin account to add a movie to the library.</p>
+            <a class="button button-primary" href="{{ url_for('login') }}">Admin login</a>
+          </div>
+        {% endif %}
+        <div class="empty-state search-empty" id="empty-state" hidden>
+          <span aria-hidden="true">✳</span><h3>No films found just yet.</h3>
+          <p>Try another title or genre and we'll find something for you.</p>
+          <button class="text-button" id="reset-filters" type="button">Show me everything →</button>
+        </div>
+      </section>
+
+      <section class="note-section" aria-label="A note about Hex Movies">
+        <span class="note-star" aria-hidden="true">✳</span>
+        <p>Lights down. <em>Worlds away.</em></p>
+        <span class="note-copy">Your next movie-night escape is right here.</span>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <a class="brand footer-brand" href="{{ url_for('home') }}"><span class="brand-mark">H</span><span class="brand-name">hex movies</span><span class="brand-period">.</span></a>
+      <span>Your front-row seat to a good story.</span>
+      <a class="back-to-top" href="#top">Back to the top ↑</a>
+    </footer>
+  </body>
+</html>
