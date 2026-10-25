@@ -13,6 +13,20 @@
             "username": "root",
             "name": "MyLocalSQL",
             "database": "movies"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5500,
+            "driver": "MySQL",
+            "database": "movies",
+            "username": "root",
+            "name": "hex movies"
         }
     ]
 }
