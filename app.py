@@ -58,6 +58,11 @@ def create_app(test_config=None):
         DATABASE=os.environ.get("MOVIE_DATABASE") or str(BASE_DIR / "movies.db"),
         SUPABASE_DB_URL=os.environ.get("SUPABASE_DB_URL"),
         UPLOAD_FOLDER=os.environ.get("MOVIE_UPLOAD_FOLDER") or str(BASE_DIR / "uploads"),
+        MAX_CONTENT_LENGTH=int(os.environ.get("MOVIE_MAX_UPLOAD_MB", "2048")) * 1024 * 1024,
+        ADMIN_SETUP_TOKEN=os.environ.get("MOVIE_ADMIN_SETUP_TOKEN"),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "false").lower() == "true",
     )
     if test_config:
         app.config.update(test_config)
@@ -76,6 +81,7 @@ def create_app(test_config=None):
             "site_name": "Hex Movies",
             "csrf_token": session["csrf_token"],
             "viewer_username": session.get("viewer_username"),
+            "movie_upload_limit_mb": app.config["MAX_CONTENT_LENGTH"] // (1024 * 1024),
             "poster_art": {
                 "adventure": "photo-1464822759023-fed622ff2c3b",
                 "animation": "photo-1518709268805-4e9042af9f23",
@@ -88,6 +94,10 @@ def create_app(test_config=None):
                 "thriller": "photo-1489599849927-2ee91cede3ba",
             },
         }
+
+    @app.get("/healthz")
+    def healthz():
+        return "ok", 200, {"Content-Type": "text/plain; charset=utf-8"}
 
     @app.get("/")
     def home():
@@ -113,7 +123,11 @@ def create_app(test_config=None):
         if request.method == "POST":
             username = request.form.get("username", "").strip()
             password = request.form.get("password", "")
-            if len(username) < 3 or len(username) > 80:
+            setup_token = request.form.get("setup_token", "")
+            required_token = current_app.config.get("ADMIN_SETUP_TOKEN")
+            if required_token and not secrets.compare_digest(setup_token, required_token):
+                flash("The admin setup token is invalid.", "error")
+            elif len(username) < 3 or len(username) > 80:
                 flash("Choose a username between 3 and 80 characters.", "error")
             elif len(password) < 12:
                 flash("Choose a password with at least 12 characters.", "error")
@@ -144,8 +158,8 @@ def create_app(test_config=None):
                 error = "Use a username of 3–40 letters, numbers, dots, dashes, or underscores."
             elif len(email) > 254 or not EMAIL_PATTERN.fullmatch(email):
                 error = "Enter a valid email address."
-            elif len(password) < 4:
-                error = "Choose a password with at least 4 characters."
+            elif len(password) < 12:
+                error = "Choose a password with at least 12 characters."
             elif password != confirm_password:
                 error = "The passwords do not match."
 
@@ -401,6 +415,11 @@ def create_app(test_config=None):
     @app.after_request
     def add_security_headers(response):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if request.is_secure:
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         return response
 
     return app

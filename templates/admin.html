@@ -30,7 +30,7 @@
       {% endfor %}
       <section class="admin-panel">
         <h2>Add a movie</h2>
-        <p class="panel-description">Any movie file format can be uploaded; browser playback depends on the format and codecs. There is no upload-size cap in the app, but uploads still need enough free disk space.</p>
+        <p class="panel-description">Any movie file format can be uploaded; browser playback depends on the format and codecs. Uploads are capped at {{ movie_upload_limit_mb }} MB per request. Make sure there is enough free disk space.</p>
         <form method="post" action="{{ url_for('create_movie') }}" enctype="multipart/form-data" class="form-grid">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
           <label class="field"><span>Movie title *</span><input name="title" type="text" maxlength="200" required /></label>

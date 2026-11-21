@@ -66,6 +66,37 @@ class MovieSiteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Manage your movies", response.data)
 
+    def test_health_endpoint(self):
+        response = self.client.get("/healthz")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, b"ok")
+        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+
+    def test_admin_setup_requires_configured_token(self):
+        self.app.config["ADMIN_SETUP_TOKEN"] = "private-setup-token"
+        token = self.csrf_token("/setup")
+        denied = self.client.post(
+            "/setup",
+            data={"csrf_token": token, "username": "studio", "password": "a-long-test-password"},
+            follow_redirects=True,
+        )
+        self.assertIn(b"admin setup token is invalid", denied.data)
+        self.assertEqual(self.client.get("/admin").status_code, 302)
+        token = self.csrf_token("/setup")
+        allowed = self.client.post(
+            "/setup",
+            data={
+                "csrf_token": token,
+                "setup_token": "private-setup-token",
+                "username": "studio",
+                "password": "a-long-test-password",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(allowed.status_code, 200)
+        self.assertIn(b"Manage your movies", allowed.data)
+
     def test_home_links_to_registration_and_both_login_pages(self):
         home = self.client.get("/")
         self.assertIn(b'href="/register">Register</a>', home.data)
@@ -245,19 +276,17 @@ class MovieSiteTests(unittest.TestCase):
         )
         self.assertIn(b"passwords do not match", mismatch.data)
 
-    def test_viewer_password_minimum_is_four_characters(self):
+    def test_viewer_password_minimum_is_twelve_characters(self):
         registration_page = self.client.get("/register")
-        self.assertIn(b'minlength="4"', registration_page.data)
-        self.assertIn(b"4 characters minimum", registration_page.data)
-
+        self.assertIn(b'minlength="12"', registration_page.data)
+        self.assertIn(b"12 characters minimum", registration_page.data)
         accepted = self.register_viewer(
-            username="shortpass",
-            email="short@example.com",
-            password="abcd",
+            username="longpass",
+            email="long@example.com",
+            password="secure-viewer-pass",
         )
         self.assertEqual(accepted.status_code, 200)
-        self.assertIn(b"Hi, shortpass", accepted.data)
-
+        self.assertIn(b"Hi, longpass", accepted.data)
         self.client.post("/logout", data={"csrf_token": self.csrf_token("/")})
         rejected = self.client.post(
             "/register",
@@ -265,20 +294,19 @@ class MovieSiteTests(unittest.TestCase):
                 "csrf_token": self.csrf_token("/register"),
                 "username": "tinyspass",
                 "email": "tiny@example.com",
-                "password": "abc",
-                "confirm_password": "abc",
+                "password": "shortpass12",
+                "confirm_password": "shortpass12",
             },
             follow_redirects=True,
         )
-        self.assertIn(b"at least 4 characters", rejected.data)
-
+        self.assertIn(b"at least 12 characters", rejected.data)
     def test_accepts_arbitrary_movie_extensions_and_has_no_app_upload_limit(self):
         self.create_admin()
-        self.assertIsNone(self.app.config["MAX_CONTENT_LENGTH"])
+        self.assertEqual(self.app.config["MAX_CONTENT_LENGTH"], 2048 * 1024 * 1024)
         admin_page = self.client.get("/admin")
-        self.assertIn(b"There is no upload-size cap in the app", admin_page.data)
+        self.assertIn(b"Uploads are capped at 2048 MB per request", admin_page.data)
         self.assertIn(b'name="video" type="file" required', admin_page.data)
-        self.assertNotIn(b"500 MB", admin_page.data)
+        self.assertIn(b"2048 MB", admin_page.data)
         token = self.csrf_token("/admin")
         response = self.client.post(
             "/admin/movies",
@@ -334,7 +362,7 @@ class MovieSiteTests(unittest.TestCase):
                 ).fetchone()
         response = self.client.get(f"/stream/{movie['id']}")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("video/x-matroska", response.headers["Content-Type"])
+        self.assertIn("video/matroska", response.headers["Content-Type"])
         self.assertEqual(response.data, b"matroska bytes")
         response.close()
 
