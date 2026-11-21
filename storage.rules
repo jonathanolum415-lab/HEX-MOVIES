@@ -1,0 +1,8 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Deliberately deny all access. Cloud Storage for Firebase requires Blaze;
+    // this Spark-only app uses external HTTPS poster/watch links instead.
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

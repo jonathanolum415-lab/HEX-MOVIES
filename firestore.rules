@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Model: movies are public catalog entries; profile/watchlist data is private per UID;
+    // admins/{uid} is provisioned only by the project owner through the Firebase Console.
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function uidUnchanged(uid) { return request.resource.data.uid == uid; }
+    function uidNotModified() { return request.resource.data.uid == resource.data.uid; }
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'owner';
+    }
+    function shortString(value, max) { return value is string && value.size() <= max; }
+    function safeOptionalUrl(value) {
+      return value == '' || (value is string && value.size() <= 2048 && value.matches('https://.*'));
+    }
+    function validMovie(data) {
+      return data.keys().hasOnly([
+          'title', 'genre', 'year', 'rating', 'runtime', 'imageUrl', 'videoUrl',
+          'description', 'featured', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'title', 'genre', 'year', 'rating', 'runtime', 'imageUrl', 'videoUrl',
+          'description', 'featured', 'createdAt', 'updatedAt'
+        ])
+        && shortString(data.title, 140) && data.title.size() > 0
+        && shortString(data.genre, 60) && data.genre.size() > 0
+        && data.year is int && data.year >= 1888 && data.year <= 2100
+        && data.rating is number && data.rating >= 0 && data.rating <= 10
+        && shortString(data.runtime, 30)
+        && safeOptionalUrl(data.imageUrl) && safeOptionalUrl(data.videoUrl)
+        && shortString(data.description, 2500)
+        && data.featured is bool
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function validProfile(data, uid) {
+      return data.keys().hasOnly(['uid', 'displayName', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'displayName', 'createdAt', 'updatedAt'])
+        && shortString(data.displayName, 40)
+        && data.createdAt is timestamp && data.updatedAt is timestamp
+        && uidUnchanged(uid);
+    }
+
+    match /movies/{movieId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && validMovie(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isAdmin() && validMovie(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+      allow create: if isOwner(uid) && validProfile(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(uid) && validProfile(request.resource.data, uid)
+        && uidNotModified()
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+
+      match /watchlist/{movieId} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['movieId', 'addedAt'])
+          && request.resource.data.keys().hasAll(['movieId', 'addedAt'])
+          && request.resource.data.movieId is string
+          && request.resource.data.movieId.size() <= 128
+          && request.resource.data.movieId == movieId
+          && request.resource.data.addedAt == request.time
+          && exists(/databases/$(database)/documents/movies/$(movieId));
+        allow update: if false;
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    match /admins/{uid} {
+      allow get: if isOwner(uid);
+      allow list, create, update, delete: if false;
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

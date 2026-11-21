@@ -15,10 +15,10 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="app.js" defer></script>
+    <link rel="stylesheet" href="styles.css?v=2" />
+    <script type="module" src="app.js"></script>
   </head>
-  <body>
+  <body id="top">
     <header class="site-header">
       <a class="brand" href="#" aria-label="Hex Movies home">
         <span class="brand-mark" aria-hidden="true">H</span>
@@ -29,11 +29,13 @@
         <a class="nav-link" href="#movie-grid">Movies</a>
         <a class="nav-link" id="nav-watchlist" href="#movie-grid">My watchlist</a>
       </nav>
-      <a class="header-note" href="#movie-grid">
-        <span class="status-dot" aria-hidden="true"></span>
-        Your next favorite is waiting
-      </a>
+      <div class="header-actions">
+        <span class="header-note"><span class="status-dot" aria-hidden="true"></span> Your next favorite is waiting</span>
+        <button class="account-button" id="account-button" type="button">Sign in</button>
+      </div>
     </header>
+
+    <div class="service-status" id="service-status" role="status" aria-live="polite" hidden></div>
 
     <main>
       <section class="hero" id="discover" aria-labelledby="hero-title">
@@ -114,6 +116,31 @@
         </div>
       </section>
 
+      <section class="admin-section" id="admin-panel" aria-labelledby="admin-title" hidden>
+        <div class="section-heading admin-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">PRIVATE LIBRARY CONTROLS</p>
+            <h2 id="admin-title">Manage the collection<span>.</span></h2>
+          </div>
+        </div>
+        <form id="movie-form" class="movie-form">
+          <input type="hidden" id="movie-id" />
+          <label>Film title<input id="movie-title" name="title" maxlength="140" required /></label>
+          <label>Genre<input id="movie-genre" name="genre" maxlength="60" required /></label>
+          <label>Year<input id="movie-year" name="year" type="number" min="1888" max="2100" required /></label>
+          <label>Rating<input id="movie-rating" name="rating" type="number" min="0" max="10" step="0.1" /></label>
+          <label>Runtime<input id="movie-runtime" name="runtime" maxlength="30" placeholder="1h 45m" /></label>
+          <label>Poster image URL<input id="movie-image" name="imageUrl" type="url" maxlength="2048" placeholder="https://…" /></label>
+          <label class="form-wide">Watch link<input id="movie-video" name="videoUrl" type="url" maxlength="2048" placeholder="Optional HTTPS link to media you can share" /></label>
+          <label class="form-wide">Short description<textarea id="movie-description" name="description" maxlength="2500" rows="3"></textarea></label>
+          <div class="form-actions form-wide">
+            <button class="button button-primary" type="submit" id="movie-submit">Add film</button>
+            <button class="button button-quiet" type="button" id="movie-cancel" hidden>Cancel edit</button>
+            <span id="admin-message" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+
       <section class="note-section" id="watchlist" aria-label="A note about Hex Movies">
         <span class="note-star" aria-hidden="true">✳</span>
         <p>Lights down. <em>Worlds away.</em></p>
@@ -127,7 +154,7 @@
         <span class="brand-name">hex movies</span><span class="brand-period">.</span>
       </a>
       <span>Your front-row seat to a good story.</span>
-      <a class="back-to-top" href="#top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' }); return false;">Back to the top ↑</a>
+      <a class="back-to-top" href="#top">Back to the top ↑</a>
     </footer>
 
     <dialog class="movie-dialog" id="movie-dialog" aria-labelledby="dialog-title">
@@ -139,6 +166,24 @@
         <p class="dialog-meta" id="dialog-meta"></p>
         <p class="dialog-description" id="dialog-description"></p>
         <button class="button button-primary" id="dialog-save" type="button"></button>
+        <a class="button button-quiet dialog-watch" id="dialog-watch" target="_blank" rel="noopener noreferrer" hidden>Open watch link ↗</a>
+      </div>
+    </dialog>
+
+    <dialog class="auth-dialog" id="auth-dialog" aria-labelledby="auth-title">
+      <button class="dialog-close" id="auth-close" type="button" aria-label="Close sign in">×</button>
+      <div class="auth-content">
+        <p class="eyebrow">YOUR PERSONAL CINEMA</p>
+        <h2 id="auth-title">Welcome back<span>.</span></h2>
+        <p id="auth-copy">Sign in to keep your watchlist with you.</p>
+        <form id="auth-form">
+          <label>Email address<input id="auth-email" type="email" autocomplete="email" required maxlength="254" /></label>
+          <label>Password<input id="auth-password" type="password" autocomplete="current-password" required minlength="8" /></label>
+          <button class="button button-primary" type="submit" id="auth-submit">Sign in</button>
+        </form>
+        <button class="text-button auth-toggle" id="auth-toggle" type="button">New here? Create a viewer account →</button>
+        <p class="auth-note">Library management is provisioned privately by the owner. There is no public admin signup.</p>
+        <p id="auth-message" role="status" aria-live="polite"></p>
       </div>
     </dialog>
   </body>

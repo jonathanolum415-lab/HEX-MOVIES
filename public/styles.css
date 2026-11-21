@@ -995,3 +995,38 @@ input:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+.header-actions { display: flex; align-items: center; gap: 22px; }
+.account-button { border: 1px solid rgba(255,255,255,.3); border-radius: 3px; padding: 10px 14px; background: rgba(16,18,15,.48); color: var(--text); cursor: pointer; font-size: 11px; }
+.account-button:hover { border-color: var(--accent); color: var(--accent); }
+.service-status { position: absolute; z-index: 3; top: 84px; right: 0; left: 0; padding: 11px 7.2%; background: #24291f; color: #e1e4da; font-size: 12px; text-align: center; }
+.service-status[data-kind="error"] { background: #492820; color: #ffe0d5; }
+.service-status[hidden] { display: none; }
+.watchlist-filter.is-selected { border-color: var(--accent); color: var(--accent); }
+.admin-section { max-width: 1100px; margin: 0 auto 80px; padding: 42px 7.2%; border: 1px solid var(--line); background: var(--surface); }
+.admin-section[hidden] { display: none; }
+.admin-heading { margin-bottom: 24px; }
+.movie-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+.movie-form label, .auth-content label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; }
+.movie-form input, .movie-form textarea, .auth-content input { width: 100%; min-height: 40px; padding: 10px; border: 1px solid var(--line); border-radius: 3px; background: #11130f; color: var(--text); font: inherit; }
+.movie-form textarea { resize: vertical; }
+.form-wide { grid-column: 1 / -1; }
+.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.form-actions #admin-message { color: var(--muted); font-size: 11px; }
+.card-admin { display: flex; gap: 8px; padding-top: 4px; }
+.card-admin button { border: 0; padding: 5px 0; background: none; color: var(--muted); cursor: pointer; font-size: 10px; }
+.card-admin button:hover { color: var(--accent); }
+.auth-dialog { position: fixed; width: min(470px, calc(100% - 32px)); max-height: min(720px, calc(100% - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 6px; background: #171a16; color: var(--text); box-shadow: 0 24px 90px #000b; }
+.auth-dialog::backdrop { background: #050605c9; backdrop-filter: blur(4px); }
+.auth-content { padding: 42px; }
+.auth-content h2 { margin: 0 0 9px; font-family: var(--serif); font-size: 34px; font-weight: 500; }
+.auth-content h2 span { color: var(--accent); }
+.auth-content > p { color: var(--muted); font-size: 12px; line-height: 1.65; }
+.auth-content form { display: grid; gap: 16px; margin: 24px 0 18px; }
+.auth-toggle { margin: 0 0 12px; }
+.auth-content .auth-note { padding-top: 14px; border-top: 1px solid var(--line); font-size: 10px; }
+#auth-message { min-height: 1em; color: #f0b09b; }
+.dialog-watch { display: inline-flex; margin: 12px 0 0 8px; }
+.dialog-watch[hidden] { display: none; }
+@media (max-width: 900px) { .header-actions { gap: 0; } }
+@media (max-width: 620px) { .movie-form { grid-template-columns: 1fr; } .auth-content { padding: 34px 25px; } }

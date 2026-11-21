@@ -1,56 +1,66 @@
 # Hex Movies
 
-Hex Movies is a Flask-powered movie library with viewer registration and sign-in, a separate admin account, movie upload/edit/delete, watch pages, and downloads.
+Hex Movies is a static cinematic movie library hosted on GitHub Pages. Firebase Authentication and Cloud Firestore provide viewer accounts, a shared movie catalog, private watchlists, and owner-only catalog management.
 
-## Render Free deployment
+## Hosting
 
-The Render Blueprint uses the **Free web service plan** only. It does not create paid services or persistent disks.
+The GitHub Actions workflow publishes `public/` to GitHub Pages whenever `main` changes. The expected site address is:
 
-1. In Render, create a Blueprint from this repository and use `render.yaml`.
-2. Review the plan and confirm the web service is set to **Free**. No disk is provisioned.
-3. The Blueprint generates a session secret and admin setup token. Retrieve `MOVIE_ADMIN_SETUP_TOKEN` from the service's Environment settings, then use it on first visit to `/setup`.
-4. Use the Render service URL for the live Flask app. GitHub Pages is a static demo and cannot run the backend.
+`https://jonathanolum415-lab.github.io/HEX-MOVIES/`
 
-### Free-plan limitations
+The repository must be public for GitHub Free Pages hosting. The workflow uses GitHub's Pages deploy actions and needs the repository's Pages source set to **GitHub Actions**. `actions/configure-pages` enables Pages when possible; if the first run reports Pages is disabled, set the source once in **Settings → Pages → Build and deployment → Source** and rerun the workflow.
 
-Render Free web services sleep after inactivity and use an ephemeral filesystem. This means the included SQLite database, uploaded movies, and posters may be lost on redeploy, restart, or instance replacement. This free-only configuration is suitable for functional testing/demo use, **not reliable permanent storage**. No persistent disk is configured. Upload limit is reduced to 512 MB to avoid overwhelming a small free instance.
+## Firebase services and plan
 
-For persistence without paid Render hosting, configure a separate free PostgreSQL provider and free object storage, then add their credentials. These must be set up and tested separately before relying on user accounts or uploaded media.
+- **Authentication:** email and password for viewer accounts.
+- **Cloud Firestore:** public movie catalog, private profiles/watchlists, and owner role records.
+- **Cloud Storage for Firebase:** not used. The app accepts HTTPS poster/watch links supplied by the owner. Firebase Storage requires Blaze, so this Spark setup does not enable uploads; `storage.rules` denies all access.
+- **Cloud Functions / server APIs:** not used.
 
-## Run locally
+Keep the Firebase project on Spark. Do not attach a billing account or upgrade the plan. Firebase's current Storage requirement makes file uploads unavailable on Spark; use external media links that you are authorized to share.
 
-1. Install Python 3.10+.
-2. `py -m pip install -r requirements.txt`
-3. Copy `.env.example` to `.env` and set optional variables.
-4. Run `py app.py`.
-5. Visit `http://127.0.0.1:5000` and create your first admin account with a password of at least 12 characters.
-6. Sign in and open **Manage library** to upload.
+## Configure the existing Firebase project
 
-## Configuration
+1. Sign in with `npx -y firebase-tools@latest login` and confirm the project with `npx -y firebase-tools@latest projects:list`.
+2. Select the existing project from the repository with `npx -y firebase-tools@latest use <PROJECT_ID>`. Do not create a new project or change the billing plan.
+3. Register a Firebase **Web app** if needed and copy its public client configuration into `public/firebase-config.js`. Do not place service-account keys or other server credentials in `public/`.
+4. In **Authentication → Sign-in method**, enable **Email/Password**. Add `jonathanolum415-lab.github.io` to **Authorized domains**.
+5. Create a **Standard Cloud Firestore** database in Native mode if one does not already exist.
+6. Deploy Firestore rules and indexes only:
 
-- `MOVIE_SECRET_KEY`: session signing key.
-- `MOVIE_DATABASE`: SQLite path (default `movies.db`).
-- `SUPABASE_DB_URL`: server-side PostgreSQL connection URI (optional).
-- `MOVIE_UPLOAD_FOLDER`: media/poster directory (default `uploads/`).
-- `MOVIE_MAX_UPLOAD_MB`: upload request limit in MB (Render Free Blueprint: 512 MB).
-- `MOVIE_ADMIN_SETUP_TOKEN`: secret required for first admin setup when set.
-- `COOKIE_SECURE`: set `true` behind HTTPS (Render Blueprint enables this).
+   ```sh
+   npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes
+   ```
 
-## Features
+GitHub Pages is the website host. Do not deploy Firebase Hosting or Cloud Storage.
 
-- Secure first-run admin setup and separate admin login/logout.
-- Viewer registration and email/password login; passwords are hashed and require 12+ characters.
-- Admin upload, editing, poster/video replacement, and deletion.
-- Search by title, genre, or year and genre filters.
-- Browser playback for compatible video formats and download fallback.
-- SQLite or Supabase PostgreSQL catalog, CSRF checks, poster allowlist, path-safe file serving, upload limits, and security headers.
+## Private owner provisioning
 
-## Storage notes
+There is no public admin signup or admin role selector. To provision the library owner:
 
-Supabase PostgreSQL stores catalog and account metadata only; video files need object storage or a persistent filesystem. Never expose server-only database/storage secrets in frontend JavaScript or commit them. Apply database migrations as appropriate.
+1. In Firebase Console **Authentication → Users**, add or identify the owner's account and copy its UID.
+2. In **Firestore → Data**, create `admins/{OWNER_UID}` with `role` (string) set to `owner`.
+3. The owner signs in normally; only that pre-provisioned UID sees the management panel. Firestore rules deny client writes to `admins`, so an account cannot grant itself admin access.
 
-Only upload content you own or are authorized to store and share.
+Remove the admin document in Firebase Console to revoke owner access. Restrict Firebase Console access to trusted maintainers.
 
-## Tests
+## Data model and rules
 
-Run `py -m unittest`. GitHub Actions runs tests on pushes and pull requests.
+- `movies/{movieId}`: public catalog entry with bounded title, genre, year, rating, runtime, HTTPS poster/watch URLs, description, feature flag, and immutable creation timestamp.
+- `users/{uid}`: private display profile, readable only by its owner.
+- `users/{uid}/watchlist/{movieId}`: private saved film IDs.
+- `admins/{uid}`: owner role record, readable only by the matching UID and never writable from the app.
+
+`firestore.rules` validates the schema and field sizes, prevents client role creation or changes, and keeps profiles and watchlists private. `storage.rules` denies all access because Storage is not used on Spark. Review rules against the final Firebase project configuration before launch.
+
+## Preview locally
+
+The sample catalog works without Firebase configuration. In preview mode, watchlist choices remain in the current browser, while accounts and shared data are unavailable.
+
+```sh
+python -m http.server 8000 --directory public
+```
+
+Open `http://localhost:8000`. After Firebase is configured and Firestore rules are deployed, the same static app uses the live backend.
+
+Only add media you own or are authorized to share.
