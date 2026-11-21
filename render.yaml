@@ -2,7 +2,7 @@ services:
   - type: web
     name: hex-movies
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     healthCheckPath: /healthz
@@ -12,16 +12,12 @@ services:
       - key: COOKIE_SECURE
         value: "true"
       - key: MOVIE_DATABASE
-        value: /var/data/movies.db
+        value: /tmp/movies.db
       - key: MOVIE_UPLOAD_FOLDER
-        value: /var/data/uploads
+        value: /tmp/uploads
       - key: MOVIE_MAX_UPLOAD_MB
-        value: "2048"
+        value: "512"
       - key: MOVIE_ADMIN_SETUP_TOKEN
         generateValue: true
       - key: SUPABASE_DB_URL
         sync: false
-    disk:
-      name: hex-movies-data
-      mountPath: /var/data
-      sizeGB: 10
