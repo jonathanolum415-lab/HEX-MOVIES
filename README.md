@@ -1,20 +1,21 @@
 # Hex Movies
 
-Hex Movies is a Flask-powered movie library with a cinematic responsive interface, viewer registration and sign-in, a separate admin account, movie upload/edit/delete, watch pages, and downloadable media.
+Hex Movies is a Flask-powered movie library with viewer registration and sign-in, a separate admin account, movie upload/edit/delete, watch pages, and downloads.
 
-## Important: use the Flask deployment for the real app
+## Render Free deployment
 
-The current GitHub Pages URL serves a **static demo**. Static hosting cannot run Flask routes, connect to your database, process registration/login, or accept admin uploads. This repository includes a Render Blueprint in `render.yaml` to configure that service.
+The Render Blueprint uses the **Free web service plan** only. It does not create paid services or persistent disks.
 
-## Deploy on Render
+1. In Render, create a Blueprint from this repository and use `render.yaml`.
+2. Review the plan and confirm the web service is set to **Free**. No disk is provisioned.
+3. The Blueprint generates a session secret and admin setup token. Retrieve `MOVIE_ADMIN_SETUP_TOKEN` from the service's Environment settings, then use it on first visit to `/setup`.
+4. Use the Render service URL for the live Flask app. GitHub Pages is a static demo and cannot run the backend.
 
-1. Open Render and choose **New → Blueprint**. Connect this GitHub repository and select `render.yaml`.
-2. The service configures a persistent disk mounted at `/var/data`. **Render's persistent disks and Starter service plan are paid; review pricing before deploying.**
-3. Set `SUPABASE_DB_URL` if you want catalog and account data stored in Supabase PostgreSQL. Leave it blank to use SQLite on the persistent disk.
-4. The Blueprint generates a secret session key and admin setup token. On first visit to `/setup`, use the generated `MOVIE_ADMIN_SETUP_TOKEN` environment value to create the admin account. This prevents visitors from claiming the first admin on a public server.
-5. After deployment, use the Render service URL for the live app. GitHub Pages remains a static demo until it is replaced or redirected to the deployed service.
+### Free-plan limitations
 
-The service sets secure session cookies, a health check, and a persistent media/database directory. Movie uploads default to a 2 GB request cap. Adjust this and the disk size to fit your authorized collection.
+Render Free web services sleep after inactivity and use an ephemeral filesystem. This means the included SQLite database, uploaded movies, and posters may be lost on redeploy, restart, or instance replacement. This free-only configuration is suitable for functional testing/demo use, **not reliable permanent storage**. No persistent disk is configured. Upload limit is reduced to 512 MB to avoid overwhelming a small free instance.
+
+For persistence without paid Render hosting, configure a separate free PostgreSQL provider and free object storage, then add their credentials. These must be set up and tested separately before relying on user accounts or uploaded media.
 
 ## Run locally
 
@@ -29,26 +30,26 @@ The service sets secure session cookies, a health check, and a persistent media/
 
 - `MOVIE_SECRET_KEY`: session signing key.
 - `MOVIE_DATABASE`: SQLite path (default `movies.db`).
-- `SUPABASE_DB_URL`: PostgreSQL connection URI (optional).
+- `SUPABASE_DB_URL`: server-side PostgreSQL connection URI (optional).
 - `MOVIE_UPLOAD_FOLDER`: media/poster directory (default `uploads/`).
-- `MOVIE_MAX_UPLOAD_MB`: request cap in MB (default 2048).
+- `MOVIE_MAX_UPLOAD_MB`: upload request limit in MB (Render Free Blueprint: 512 MB).
 - `MOVIE_ADMIN_SETUP_TOKEN`: secret required for first admin setup when set.
 - `COOKIE_SECURE`: set `true` behind HTTPS (Render Blueprint enables this).
 
 ## Features
 
-- First-run admin setup with an optional deployment setup token; separate admin login and logout.
-- Viewer registration and email/password login. Passwords are hashed and registration requires 12+ characters.
+- Secure first-run admin setup and separate admin login/logout.
+- Viewer registration and email/password login; passwords are hashed and require 12+ characters.
 - Admin upload, editing, poster/video replacement, and deletion.
 - Search by title, genre, or year and genre filters.
 - Browser playback for compatible video formats and download fallback.
 - SQLite or Supabase PostgreSQL catalog, CSRF checks, poster allowlist, path-safe file serving, upload limits, and security headers.
 
-## Data and media storage
+## Storage notes
 
-Supabase PostgreSQL stores metadata and account password hashes, not video binaries. Uploads remain on the service's persistent disk. Use the server-only database connection string; never expose it in frontend JavaScript or commit secrets. The migration revokes table access from Supabase client roles.
+Supabase PostgreSQL stores catalog and account metadata only; video files need object storage or a persistent filesystem. Never expose server-only database/storage secrets in frontend JavaScript or commit them. Apply database migrations as appropriate.
 
-Only upload content that you own or are authorized to store and share.
+Only upload content you own or are authorized to store and share.
 
 ## Tests
 
