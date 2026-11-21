@@ -45,9 +45,12 @@
           {% if mode == 'login' %}
             <label class="field"><span>Admin username</span><input name="username" type="text" minlength="3" maxlength="80" autocomplete="username" required /></label>
           {% endif %}
-          <label class="field"><span>Password{% if mode == 'setup' %} (12 characters minimum){% elif mode == 'register' %} (4 characters minimum){% endif %}</span><input name="password" type="password" minlength="{{ 12 if mode == 'setup' else 4 if mode == 'register' else 1 }}" autocomplete="{{ 'new-password' if mode in ('setup', 'register') else 'current-password' }}" required /></label>
+          <label class="field"><span>Password{% if mode == 'setup' %} (12 characters minimum){% elif mode == 'register' %} (12 characters minimum){% endif %}</span><input name="password" type="password" minlength="{{ 12 if mode in ('setup', 'register') else 1 }}" autocomplete="{{ 'new-password' if mode in ('setup', 'register') else 'current-password' }}" required /></label>
+          {% if mode == 'setup' and config.ADMIN_SETUP_TOKEN %}
+            <label class="field"><span>Admin setup token</span><input name="setup_token" type="password" autocomplete="off" required /></label>
+          {% endif %}
           {% if mode == 'register' %}
-            <label class="field"><span>Confirm password</span><input name="confirm_password" type="password" minlength="4" autocomplete="new-password" required /></label>
+            <label class="field"><span>Confirm password</span><input name="confirm_password" type="password" minlength="12" autocomplete="new-password" required /></label>
           {% endif %}
           <button class="button button-primary form-submit" type="submit">
             {% if mode == 'setup' %}Create admin account{% elif mode == 'register' %}Create viewer account{% else %}Sign in{% endif %}
