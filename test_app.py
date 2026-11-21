@@ -362,7 +362,7 @@ class MovieSiteTests(unittest.TestCase):
                 ).fetchone()
         response = self.client.get(f"/stream/{movie['id']}")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("video/x-matroska", response.headers["Content-Type"])
+        self.assertIn("video/matroska", response.headers["Content-Type"])
         self.assertEqual(response.data, b"matroska bytes")
         response.close()
 
